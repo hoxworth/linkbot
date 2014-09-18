@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html id="roothtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <title>Hedwig Config</title>
+
+    <link rel="stylesheet" href="/style/bootstrap-3.2.0-dist/css/bootstrap-theme.css">
+    <link rel="stylesheet" href="/style/bootstrap-3.2.0-dist/css/bootstrap-theme.css.map">
+    <link rel="stylesheet" href="/style/bootstrap-3.2.0-dist/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/style/bootstrap-3.2.0-dist/css/bootstrap.css">
+    <link rel="stylesheet" href="/style/bootstrap-3.2.0-dist/css/bootstrap.css.map">
+    <link rel="stylesheet" href="/style/bootstrap-3.2.0-dist/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="/style/base.css">
+
+    <!--External JS libraries-->
+    <script src="/scripts/jquery.min.js"></script>
+    <script src="/scripts/json2.js"></script>
+
+    <script src="/style/bootstrap-3.2.0-dist/js/bootstrap.js"></script>
+    <script src="/style/bootstrap-3.2.0-dist/js/bootstrap.min.js"></script>
+
+    <script src="/scripts/base.js"></script>
+
+    <script type="text/javascript">
+
+        // Set up a room configuration object
+        var rooms = <%= config['rooms'].to_json %>;
+        var selectedRoom = null;
+
+        $(function() {
+            // Configure the room divs
+            resizeLists();
+
+            $( window ).resize(function() {
+                resizeLists();
+            });
+
+            // Handle plugin enabled/disabled state
+            $(".plugin").click(function() {
+                $(this).toggleClass('btn-danger btn-success');
+                if ($(this).html() == "Enabled") {
+                    $(this).html("Disabled");
+                }
+                else {
+                    $(this).html("Enabled");
+                }
+            });
+
+            // Handle room presence state
+            $(".room").click(function() {
+                // Save any existing configuration
+                saveRoomConfig();
+
+                if ($(this).html() == "In Room") {
+                    if (confirm("Are you sure? Leaving the room destroys all configuration!")) {
+                        $(this).toggleClass('btn-danger btn-success');
+
+                        // Remove the configuration for the room
+                        delete rooms[$(this).attr("room")];
+                        selectedRoom = null;
+
+                        $(this).html("Not In Room");
+                        $(this).prev().hide();
+                        $("#room-plugin-list").hide();
+                        $("#plugin-config-header").hide();
+                    }
+                }
+                else {
+                    $(this).toggleClass('btn-danger btn-success');
+                    selectedRoom = $(this).attr("room");
+                    rooms[selectedRoom] = {};
+
+                    configRoom();
+
+                    $(this).html("In Room");
+                    $(this).prev().show();
+                    $("#room-plugin-list").show();
+                    $("#plugin-config-header").show();
+                    $("#plugin-config-header").html($(this).attr("name") + " Plugin Configuration");
+                }
+            });
+
+            // Handle room presence state
+            $("#room-list [room-config]").click(function() {
+                // Save any existing configuration
+                saveRoomConfig();
+
+                selectedRoom = $(this).attr("room-xmpp");
+                configRoom();
+
+                $("#room-plugin-list").show();
+                $("#plugin-config-header").show();
+                $("#plugin-config-header").html($(this).attr("room-config") + " Plugin Configuration");
+            });
+
+            // Handle saving
+            $("#save").click(function() {
+
+                // Save any existing configuration
+                saveRoomConfig();
+
+                var json = getConfigJson();
+
+                $.ajax({
+                    type: "POST",
+                    url: "/",
+                    data: json,
+                    success: function(data) {
+                        $("#save-status").html("Configuration saved!");
+                        $("#save-status").fadeIn().delay(3000).fadeOut();
+                    },
+                    error: function(jqxhr, status, error) {
+                        $("#save-status").html("Save failed!");
+                        $("#save-status").fadeIn().delay(3000).fadeOut();
+                    },
+                    abort: function(data) {
+                        $("#save-status").html("Save failed!");
+                        $("#save-status").fadeIn().delay(3000).fadeOut();
+                    }
+                })
+
+
+            });
+        });
+
+        function resizeLists() {
+            $('#room-list').height($(window).height() - 170);
+            $('#room-plugin-list').height($(window).height() - 170);
+        }
+
+        function configRoom() {
+            // Clear the current config
+            clearRoomConfig();
+
+            if (selectedRoom in rooms) {
+                // Disable the disabled plugins
+                if ("blacklist" in rooms[selectedRoom]) {
+                    $.each(rooms[selectedRoom]["blacklist"], function(index, value) {
+                        $('#room-plugin-list').find("button[plugin=\"" + value + "\"]").each(function() {
+                            $(this).toggleClass('btn-danger btn-success');
+                            $(this).html("Disabled");
+                        });
+                    });
+                }
+
+                // Fill in existing configuration
+                if ("config" in rooms[selectedRoom]) {
+                    $.each(rooms[selectedRoom]["config"], function(plugin, conf) {
+                        $.each(conf, function(confKey, confValue) {
+                            if (typeof confValue === 'string') {
+                                $('#room-plugin-list').find("a[plugin=\"" + plugin + "\"]").find("input[config-field=\"" + confKey + "\"]").val(confValue);
+                            }
+                            else {
+                                $.each(confValue, function(index, value) {
+                                    input = document.createElement('input');
+                                    $(input).attr('type', 'text');
+                                    $(input).attr('class', 'form-control array-form');
+                                    $(input).attr('placeholder', 'New Value');
+                                    $(input).attr('added', 'true');
+                                    $(input).attr('value', value);
+                                    $('#room-plugin-list').find("a[plugin=\"" + plugin + "\"]").find("input[array-field=\"" + confKey + "\"]").before(input);
+                                });
+                            }
+                        });
+                    });
+                }
+            }
+        }
+
+        function clearRoomConfig() {
+            // Remove all text from all inputs
+            $("#room-plugin-list").find("input").each(function() { $(this).val('')});
+
+            // Reset all plugin buttons to "Enabled"
+            $("#room-plugin-list").find("button.plugin.btn-danger").each(function() {
+                $(this).toggleClass('btn-danger btn-success');
+                $(this).html("Enabled");
+            });
+
+            // Remove all added array elements
+            $("#room-plugin-list").find("[added]").remove();
+        }
+
+        function saveRoomConfig() {
+            if (selectedRoom != null) {
+                config = {"blacklist": [], "config": {}};
+
+                // Generate the room blacklist
+                $("#room-plugin-list").find("button.plugin.btn-danger").each(function() { config["blacklist"].push( $(this).attr("plugin"))});
+
+                // Generate the plugin config
+                $("#room-plugin-list").find(".edit-config-button").parents('[plugin]').each(function() {
+                    var pluginConfig = {};
+
+                    $(this).find('[field]').each(function() {
+                        var key = $(this).attr('field');
+
+                        if ($(this).attr('type') == "single") {
+                            if ($(this).find("input").val() != "") {
+                                pluginConfig[key] = $(this).find("input").val();
+                            }
+                        }
+                        else {
+                            var configArray = [];
+                            $(this).find("input").each(function() {
+                                if ($(this).val() != "") {
+                                    configArray.push($(this).val());
+                                }
+                            });
+                            if (configArray.length > 0) {
+                                pluginConfig[key] = configArray;
+                            }
+                        }
+                    });
+
+                    if (!$.isEmptyObject(pluginConfig)) {
+                        config["config"][$(this).attr("plugin")] = pluginConfig;
+                    }
+
+                });
+
+                rooms[selectedRoom] = config;
+            }
+        }
+
+        // Generate JSON representing the current configuration
+        function getConfigJson() {
+            var config = {};
+
+            config["connectors"] = getConnectors();
+            config["disabled_plugins"] = getDisabledGlobalPlugins();
+            config["plugins"] = getPluginConfigs();
+            config["rooms"] = rooms;
+
+            return JSON.stringify(config);
+        }
+
+        // Retrieve an array of all disabled global plugins
+        function getDisabledGlobalPlugins() {
+            var plugins = [];
+            $("#plugin-main-body button.plugin.btn-danger").each(function() { plugins.push( $(this).attr("plugin"))});
+            return plugins;
+        }
+
+        // Retrieve current connection information
+        function getConnectors() {
+            var connector = {
+                "type" : "jabber",
+                "resource" : "bot",
+                "server" : "chat.hipchat.com",
+                "conference" : "conf.hipchat.com",
+                "periodic" : true,
+                "receive_broadcasts" : true
+            };
+            connector["username"] = $("#connection-username").val();
+            connector["password"] = $("#connection-password").val();
+            connector["fullname"] = $("#connection-fullname").val();
+            connector["api_token"] = $("#connection-token").val();
+            return [connector];
+        }
+
+        // Retrieve global plugin configuration
+        function getPluginConfigs() {
+
+          var plugins = {};
+
+          $("#pluginconfig").find(".edit-config-button").parents('[plugin]').each(function() {
+            var pluginConfig = {};
+
+            $(this).find('[field]').each(function() {
+                var key = $(this).attr('field');
+
+                if ($(this).attr('type') == "single") {
+                    if ($(this).find("input").val() != "") {
+                        pluginConfig[key] = $(this).find("input").val();
+                    }
+                }
+                else {
+                    var configArray = [];
+                    $(this).find("input").each(function() {
+                        if ($(this).val() != "") {
+                            configArray.push($(this).val());
+                        }
+                    });
+                    pluginConfig[key] = configArray;
+                }
+            });
+
+            if (!$.isEmptyObject(pluginConfig)) {
+                plugins[$(this).attr("plugin")] = pluginConfig;
+            }
+
+          });
+          return plugins;
+        }
+
+    </script>
+
+  </head>
+
+  <body id="body">
+
+    <!-- Nav bar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Hedwig</a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#connection" role="tab" data-toggle="tab">Connection</a></li>
+            <li><a href="#pluginconfig" role="tab" data-toggle="tab">Plugins</a></li>
+            <li><a href="#roomconfig" role="tab" data-toggle="tab">Rooms</a></li>
+          </ul>
+
+          <button id="save" type="submit" class="btn btn-success navbar-btn navbar-right" style="margin-left: 20px;">Save Configuration</button>
+          <p id="save-status" class="navbar-text navbar-right" style="display: none;"></p>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+    <div class="body-wrapper">
+
+      <!-- Tab panes -->
+      <div class="tab-content">
+
+        <!-- CONNECTION -->
+        <div class="tab-pane active" id="connection">
+
+          <div id="connection-table">
+
+            <div class="connection-row-container">
+              <div class="connection-row-item">Username</div>
+              <div class="connection-row-value"><input class="connection-details" id="connection-username" value="<%= config['connectors'][0]["username"] %>" /></div>
+            </div>
+
+            <div class="connection-row-container">
+              <div class="connection-row-item">Password</div>
+              <div class="connection-row-value"><input type="password" class="connection-details" id="connection-password" value="<%= config['connectors'][0]["password"] %>" /></div>
+            </div>
+
+            <div class="connection-row-container">
+              <div class="connection-row-item">Full Name</div>
+              <div class="connection-row-value"><input class="connection-details" id="connection-fullname" value="<%= config['connectors'][0]["fullname"] %>" /></div>
+            </div>
+
+            <div class="connection-row-container" style="display: none;">
+              <div class="connection-row-item">HipChat API Token</div>
+              <div class="connection-row-value"><input class="connection-details" id="connection-token" value="<%= config['connectors'][0]["api_token"] %>" /></div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- PLUGINS -->
+        <div class="tab-pane" id="pluginconfig">
+
+          <div id="plugin-main-body">
+
+              <% plugins.each do |plugin| %>
+                <% if plugin[:ptr].hidden.nil? || !plugin[:ptr].hidden %>
+                  <a class="list-group-item" plugin="<%= plugin[:ptr].name %>">
+                    <div style="float: left;">
+                      <p class="lead end"><%= plugin[:ptr].name %></p>
+                      <% if plugin[:ptr].description %>
+                        <p class="faded end plugin-description"><%= plugin[:ptr].description %></p>
+                      <% end %>
+                    </div>
+                    <div style="float: right; margin-top: 11px;">
+                      <% if configpluginnames.include? plugin[:ptr].name %>
+                        <button type="button" class="btn btn-primary edit-config-button">Edit</button>
+                      <% end %>
+                      <% if config["disabled_plugins"].include? plugin[:ptr].name %>
+                        <button type="button" class="btn btn-danger plugin" plugin="<%= plugin[:ptr].name %>">Disabled</button>
+                      <% else %>
+                        <button type="button" class="btn btn-success plugin" plugin="<%= plugin[:ptr].name %>">Enabled</button>
+                      <% end %>
+                    </div>
+                    <div style="clear: both;"></div>
+
+                    <%#if the plugin has config options present, create a div for configuring them%>
+                    <% if configoptions.include? plugin[:ptr].name %>
+                      <div id="<%= plugin[:ptr].name %>configuration" class="configuration-container invisible">
+                        <div class="configuration-body">
+                          <%#now start putting forms in/user input for each config field%>
+                          <% configoptions[plugin[:ptr].name].each do |fieldsubarray| %>
+                            <%#field data type checking for correct UX%>
+                            <% if fieldsubarray[1] == :string %>
+                              <div class="form-group" type="single" field="<%= fieldsubarray[0] %>">
+                                <%#Placeholder in label mirrors current config field value%>
+                                <label for="inputConfig" class="col-sm-2 control-label"><%= fieldsubarray[2] %></label>
+                                <div class="col-sm-7 config-input-wrapper">
+                                  <%#if the plugin has pre-existing data in the config.json file%>
+                                  <% if config['plugins'][plugin[:ptr].name] != nil %>
+                                    <% config['plugins'][plugin[:ptr].name].each_key do |key| %>
+                                      <input class="form-control" id="inputConfig" placeholder="New Value" value="<%= config['plugins'][plugin[:ptr].name][key] %>" />
+                                    <% end %>
+                                  <% else %>
+                                    <input class="form-control" id="inputConfig" placeholder="New Value">
+                                  <% end %>
+                                </div>
+                              </div>
+                            <% elsif fieldsubarray[1] == :array %>
+                              <div class="array-group" type="array" field="<%= fieldsubarray[0] %>">
+                                <p class="plugin-array-name"><%= fieldsubarray[2] %></p>
+                                <div class="plugin-array-form-wrapper">
+                                  <%#if this plugin array config is a hash/has keys%>
+                                  <% if config['plugins'][plugin[:ptr].name] != nil %>
+                                    <%#for each key%>
+                                    <% config['plugins'][plugin[:ptr].name].each_key do |key| %>
+                                      <%#for each value corresponding to current key%>
+                                      <% config['plugins'][plugin[:ptr].name][key].each do |value| %>
+                                        <input type="text" class="form-control array-form <%= key %>" value="<%= value %>">
+                                      <% end %>
+                                    <% end %>
+                                  <% end %>
+                                  <input type="text" class="form-control array-form" placeholder="New Value">
+                                  <span class="glyphicon glyphicon-plus plugin-array-add-form"></span>
+                                </div>
+                                <div style="clear: both;"></div>
+                              </div>
+                            <% end %>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+
+                  </a>
+                <% end %>
+              <% end %>
+
+            </div>
+
+          </div>
+
+          <div class="tab-pane" id="roomconfig">
+            <div id="room-main-body">
+
+              <div class="col-md-6">
+                <h4>Rooms</h4>
+                <div id='room-list' class="list-group plugin-list">
+                  <% rooms.each do |room| %>
+                          <a class="list-group-item" room="<%= room[:xmpp] %>">
+                            <div style="float: left;">
+                              <p class="lead end"><%= room[:name] %></p>
+                            </div>
+                            <div style="float: right; margin-top: 11px;">
+                              <button type="button" room-config="<%= room[:name] %>" room-xmpp="<%= room[:xmpp] %>" class="btn btn-primary edit-config-button"<% unless config["rooms"].keys.include? room[:xmpp] %> style="display: none;"<% end %>>Edit Plugin Configuration</button>
+                              <% unless config["rooms"].keys.include? room[:xmpp] %>
+                                  <button type="button" class="btn btn-danger room" name="<%= room[:name] %>" room="<%= room[:xmpp] %>">Not In Room</button>
+                              <% else %>
+                                  <button type="button" class="btn btn-success room" name="<%= room[:name] %>" room="<%= room[:xmpp] %>">In Room</button>
+                              <% end %>
+                            </div>
+                            <div style="clear: both;"></div>
+
+                          </a>
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <h4 id="plugin-config-header" style="display: none;"></h4>
+                <div id='room-plugin-list' class="list-group plugin-list" style="display: none;">
+                <% plugins.each do |plugin| %>
+                    <% if plugin[:ptr].hidden.nil? || !plugin[:ptr].hidden %>
+                        <a class="list-group-item" plugin="<%= plugin[:ptr].name %>">
+                          <div style="float: left;">
+                            <p class="lead end"><%= plugin[:ptr].name %></p>
+                            <% if plugin[:ptr].description %>
+                                <p class="faded end plugin-description"><%= plugin[:ptr].description %></p>
+                            <% end %>
+                          </div>
+                          <div style="float: right; margin-top: 11px;">
+                            <% if configpluginnames.include? plugin[:ptr].name %>
+                                <button type="button" class="btn btn-primary edit-config-button">Edit</button>
+                            <% end %>
+                            <button type="button" class="btn btn-success plugin" plugin="<%= plugin[:ptr].name %>">Enabled</button>
+                          </div>
+                          <div style="clear: both;"></div>
+
+                          <%#if the plugin has config options present, create a div for configuring them%>
+                          <% if configoptions.include? plugin[:ptr].name %>
+                              <%#TODO%>
+                              <div id="<%= plugin[:ptr].name %>configuration" class="configuration-container invisible">
+                                <div class="configuration-body">
+                                  <%#now start putting forms in/user input for each config field%>
+                                  <% configoptions[plugin[:ptr].name].each do |fieldsubarray| %>
+                                      <%#field data type checking for correct UX%>
+                                      <% if fieldsubarray[1] == :string %>
+                                          <div class="form-group" type="single" field="<%= fieldsubarray[0] %>">
+                                            <%#Placeholder in label mirrors current config field value%>
+                                            <label for="inputConfig" class="col-sm-2 control-label"><%= fieldsubarray[2] %></label>
+                                            <div class="col-sm-7 config-input-wrapper">
+                                              <input class="form-control" id="inputConfig" placeholder="New Value" config-field="<%= fieldsubarray[0] %>" />
+                                            </div>
+                                          </div>
+                                      <% elsif fieldsubarray[1] == :array %>
+                                          <div class="array-group" type="array" field="<%= fieldsubarray[0] %>">
+                                            <p class="plugin-array-name"><%= fieldsubarray[2] %></p>
+                                            <div class="plugin-array-form-wrapper">
+                                              <%#if this plugin array config is a hash/has keys%>
+                                              <input type="text" class="form-control array-form" placeholder="New Value" array-field="<%= fieldsubarray[0] %>">
+                                              <span class="glyphicon glyphicon-plus plugin-array-add-form"></span>
+                                            </div>
+                                            <div style="clear: both;"></div>
+                                          </div>
+                                      <% end %>
+                                  <% end %>
+                                </div>
+                              </div>
+                          <% end %>
+
+                        </a>
+                    <% end %>
+                <% end %>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+    </div>
+
+  </body>
+
+</html>

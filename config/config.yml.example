@@ -1,0 +1,14 @@
+---
+environment: production
+chdir: /path/to/hedwig
+address: 127.0.0.1
+user: root
+group: admin
+port: 45679
+pid: /path/to/hedwig/thin.pid
+rackup: /path/to/hedwig/config.ru
+log: /path/to/hedwig/logs/thin.log
+max_conns: 512
+timeout: 30
+max_persistent_conns: 256
+daemonize: true

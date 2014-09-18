@@ -1,0 +1,17 @@
+class Slap < Linkbot::Plugin
+
+  register :regex => /\/slap(?: ([\w\s]+))?/
+  help '/slap [username] - Flashback to the halcyon days of the 1990s when hammer pants were all the rage'
+  description "IRC trout slappin'"
+
+  def self.on_message(message, matches, config)
+    if matches[0] and matches[0].length > 0
+      user = matches[0]
+    else
+      user = "everyone"
+    end
+
+    "#{message.user_name} slaps #{user} around a bit with a large trout"
+  end
+
+end

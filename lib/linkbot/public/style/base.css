@@ -1,0 +1,247 @@
+#body {
+    margin: 0px;
+}
+
+.body-wrapper {
+    margin: 80px 20px 20px 20px;
+}
+
+/*table that contains all Connection information*/
+#connection-table {
+    font-size: 21px;
+    font-weight: 400;
+    width: 95%;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/*single div that holds all connection data for single connection var*/
+.connection-row-container {
+    background-color: #FFF;
+    border-bottom: 1px solid rgb(173, 173, 173);
+    display: table;
+    width: 100%;
+    height: 60px;
+    vertical-align: middle;
+    text-align: center;
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+.connection-row-container.hover {
+    background-color: #dfdfdf;
+}
+
+/*div that holds item in connection info*/
+.connection-row-item {
+    position: relative;
+    font-size: 22px;
+    font-weight: 300;
+    width: 500px;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: left;
+    padding-left: 170px;
+}
+
+/*div that holds value of connection item*/
+.connection-row-value {
+    position: relative;
+    height: 100%;
+    width: 400px;
+    font-size: 22px;
+    font-weight: 300;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: left;
+}
+
+/*div that holds 'edit' glyph*/
+.connection-row-glyph {
+    position: relative;
+    height: 100%;
+    width: 25px;
+    font-size: 22px;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: left;
+    cursor: pointer;
+}
+.connection-row-glyph.invisible {
+    opacity: 0;
+    cursor: default;
+}
+
+/*form where user can enter new connection data*/
+.connection-row-value-input {
+    width: 300px;
+}
+
+/*div that holds the default global plugin configuration body*/
+#plugin-main-body {
+    position: relative;
+    width: 95%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/*div that holds plugin checkbox*/
+.checkbox.plugin {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 23px;
+}
+
+/*<label> tag for plugin checkbox*/
+.checkbox-label {
+    line-height: 20px;
+}
+
+/*<a> tag config link to view plugin configuration options*/
+.config-link {
+    cursor: pointer;
+}
+
+/*<a> tag config link that is invisible*/
+.config-link.invisble {
+    opacity: 0;
+}
+
+/*save button for checkboxes*/
+#save-global-plugins {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 15px;
+}
+
+/*div containing a plugin's configuration options*/
+.configuration-container {
+    width: 100%;
+}
+.configuration-container.invisible {
+    position: absolute;
+}
+
+/*div that forms horizontal bar across top of plugin configuration div*/
+.configuration-header-bar {
+    width: 100%;
+    height: 40px;
+    background-color: rgb(248, 248, 249);
+    text-align: center;
+    border-bottom: 1px solid rgb(180, 205, 255);
+    border-left: 1px solid rgb(180, 205, 255);
+    border-right: 1px solid rgb(180, 205, 255);
+}
+
+/*div that forms body below configuration-header-bar in configuration-container*/
+.configuration-body {
+    width: 100%;
+    height: 100%;
+    margin-top: 12px;
+}
+
+/*paragraph containing the description of the plugin*/
+.faded.end.plugin-description {
+    font-size: 15px;
+    color: #ababab;
+}
+
+/*div in configuration header bar that contains plugin's name*/
+.configuration-header-bartitle {
+    position: relative;
+    width: 70%;
+    float: left;
+    font-size: 20px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+/*label next to form for new plugin config string input*/
+.col-sm-2.control-label {
+    width: 50%;
+    margin-top: 8px;
+    font-size: 15px;
+}
+
+/*div that contain form to update plugin configuration*/
+.config-input-wrapper {
+    width: 50%;
+}
+
+/*div that holds label and form input for plugin config field*/
+.form-group {
+    position: relative;
+    display: block;
+    height: 40px;
+    margin-bottom: 0px;
+    margin-top: 4px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/*button in configuration-body to save form input*/
+.save-plugin-configuration {
+    margin-top: 20px;
+}
+
+p.faded {
+    font-size: 12px;
+    color: #C4C4C4;
+}
+
+p.end {
+    margin-bottom: 0px;
+}
+
+.plugin-list {
+    overflow-y: scroll;
+}
+
+.save {
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.connection-details {
+    width: 400px;
+}
+
+/*div that contains array name and forms for array editing*/
+.array-group {
+    position: relative;
+    display: block;
+    margin-bottom: 0px;
+    margin-top: 4px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/*paragraph name of :array type field in plugin config*/
+.plugin-array-name {
+    float: left;
+    width: 50%;
+    position: relative;
+    font-weight: 200;
+    font-size: 18px;
+    text-align: right;
+    padding-right: 110px;
+    padding-top: 15px;
+}
+
+/*div that contains forms for plugin array config*/
+.plugin-array-form-wrapper {
+    float: left;
+    position: relative;
+    width: 50%;
+}
+
+/*form for inputting into plugin array config*/
+.form-control.array-form {
+    margin-top: 10px;
+}
+
+/*+ glyph to add a new form to array config modification*/
+.plugin-array-add-form {
+    width: 40px;
+    margin-top: 7px;
+    position: relative;
+    font-size: 20px;
+    cursor: pointer;
+}

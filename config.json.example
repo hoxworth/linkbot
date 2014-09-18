@@ -1,0 +1,53 @@
+{
+    "connectors" : [
+        {
+            "type" : "jabber",
+            "username" : "11111_111111",
+            "fullname" : "Ken Bot",
+            "password" : "password",
+            "resource" : "bot",
+            "server" : "chat.hipchat.com",
+            "conference" : "conf.hipchat.com",
+            "periodic" : true,
+            "receive_broadcasts" : true,
+            "api_token" : "blahblah"
+        }
+    ],
+    "plugins" : {
+        "Snap" : {
+            "images" : [
+                "http://i3.photobucket.com/albums/y79/IJG/oh_snap.gif",
+                "http://www.gifsoup.com/webroot/animatedgifs/108696_o.gif",
+                "http://stream1.gifsoup.com/view/385350/glee-oh-snap-o.gif",
+                "http://img.pandawhale.com/79984-jon-stewart-OH-SNAP-gif-Nn2l.gif",
+                "http://media.giphy.com/media/xs6FqhzEdWMZW/giphy.gif",
+                "http://i894.photobucket.com/albums/ac143/valo138/OhSnap-house-1.gif",
+                "http://i.imgur.com/M5B3Xy6.gif",
+                "http://i.imgur.com/Mgm12.gif",
+                "http://www.ieatgravel.com/wp-content/uploads/2013/10/edge-wrestler-gif.gif"
+            ]
+        },
+        "Links" : {
+            "whitelist" : [
+                "http://google.com",
+                "http://youtube.com"
+            ]
+        }
+    },
+    "disabled_plugins" : [
+    ],
+    "rooms" : {
+        "11111_test" : {
+            "whitelist" : [
+                "Snap"
+            ],
+            "config" : {
+                "Snap" : {
+                    "images" : [
+                        "http://i.imgur.com/Mgm12.gif"
+                    ]
+                }
+            }
+        }
+    }
+}
